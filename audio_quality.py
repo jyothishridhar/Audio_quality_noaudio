@@ -21,26 +21,26 @@ def calculate_audio_features(samples):
     }
     return features
 
-def evaluate_audio_quality_for_video(video_url, output_folder, sample_rate, frame_size=4410):
+def evaluate_audio_quality_for_audio(audio_url, output_folder, sample_rate, frame_size=4410):
     try:
         # Download the video
-        video_content = requests.get(video_url).content
+        audio_content = requests.get(audio_url).content
 
         # Extract audio samples
-        audio_samples = extract_samples(video_content)
+        audio_samples = extract_samples(audio_content)
 
         # List to store results for each frame
         results_for_frames = []
 
         # Output folder
-        video_output_folder = os.path.join(output_folder, "audio_plots")
+        audio_output_folder = os.path.join(output_folder, "audio_plots")
 
         # Evaluate audio quality for each frame
         for i in range(0, len(audio_samples), frame_size):
             frame_samples = audio_samples[i:i + frame_size]
 
             result, glitch_status, glitch_stats, audio_features, plot_filename = evaluate_audio_quality_for_frame(
-                frame_samples, i, frame_size, video_output_folder, sample_rate
+                frame_samples, i, frame_size, audio_output_folder, sample_rate
             )
 
             results_for_frames.append({
@@ -73,23 +73,23 @@ original_audio_url = "https://github.com/jyothishridhar/Audio_quality_noaudio/ra
 distorted_audio_url = "https://github.com/jyothishridhar/Audio_quality_noaudio/raw/master/testing_audio.wav"
 
 # Download videos
-original_video_content = requests.get(original_audio_url).content
-distorted_video_content = requests.get(distorted_audio_url).content
+original_audio_content = requests.get(original_audio_url).content
+distorted_audio_content = requests.get(distorted_audio_url).content
 
 # Add download links
-st.markdown(f"**Download Original Video**")
-st.markdown(f"[Click here to download the Original Video]({original_audio_url})")
+st.markdown(f"**Download Original audio**")
+st.markdown(f"[Click here to download the Original audio]({original_audio_url})")
 
-st.markdown(f"**Download Distorted Video**")
-st.markdown(f"[Click here to download the Distorted Video]({distorted_audio_url})")
+st.markdown(f"**Download Distorted audio**")
+st.markdown(f"[Click here to download the Distorted audio]({distorted_audio_url})")
 
 # Sample rate
 sample_rate = 44100
 
 # Add button to run audio quality analysis for the original video
 if st.button("Run Audio Quality Analysis (Original)"):
-    st.text("Running audio quality analysis for the original video...")
-    result_original, report_df_original, excel_file_original = evaluate_audio_quality_for_video(
+    st.text("Running audio quality analysis for the original audio...")
+    result_original, report_df_original, excel_file_original = evaluate_audio_quality_for_audio(
         original_audio_url, tempfile.gettempdir(), sample_rate
     )
     st.success(result_original)
@@ -108,8 +108,8 @@ if st.button("Run Audio Quality Analysis (Original)"):
 
 # Add button to run audio quality analysis for the distorted video
 if st.button("Run Audio Quality Analysis (Distorted)"):
-    st.text("Running audio quality analysis for the distorted video...")
-    result_distorted, report_df_distorted, excel_file_distorted = evaluate_audio_quality_for_video(
+    st.text("Running audio quality analysis for the distorted audio...")
+    result_distorted, report_df_distorted, excel_file_distorted = evaluate_audio_quality_for_audio(
         distorted_audio_url, tempfile.gettempdir(), sample_rate
     )
     st.success(result_distorted)
