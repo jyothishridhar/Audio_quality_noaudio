@@ -73,15 +73,15 @@ original_audio_url = "https://github.com/jyothishridhar/Audio_quality_noaudio/ra
 distorted_audio_url = "https://github.com/jyothishridhar/Audio_quality_noaudio/raw/master/testing_audio.wav"
 
 # Download videos
-original_video_content = requests.get(original_video_url).content
-distorted_video_content = requests.get(distorted_video_url).content
+original_video_content = requests.get(original_audio_url).content
+distorted_video_content = requests.get(distorted_audio_url).content
 
 # Add download links
 st.markdown(f"**Download Original Video**")
-st.markdown(f"[Click here to download the Original Video]({original_video_url})")
+st.markdown(f"[Click here to download the Original Video]({original_audio_url})")
 
 st.markdown(f"**Download Distorted Video**")
-st.markdown(f"[Click here to download the Distorted Video]({distorted_video_url})")
+st.markdown(f"[Click here to download the Distorted Video]({distorted_audio_url})")
 
 # Sample rate
 sample_rate = 44100
@@ -90,7 +90,7 @@ sample_rate = 44100
 if st.button("Run Audio Quality Analysis (Original)"):
     st.text("Running audio quality analysis for the original video...")
     result_original, report_df_original, excel_file_original = evaluate_audio_quality_for_video(
-        original_video_url, tempfile.gettempdir(), sample_rate
+        original_audio_url, tempfile.gettempdir(), sample_rate
     )
     st.success(result_original)
 
@@ -110,7 +110,7 @@ if st.button("Run Audio Quality Analysis (Original)"):
 if st.button("Run Audio Quality Analysis (Distorted)"):
     st.text("Running audio quality analysis for the distorted video...")
     result_distorted, report_df_distorted, excel_file_distorted = evaluate_audio_quality_for_video(
-        distorted_video_url, tempfile.gettempdir(), sample_rate
+        distorted_audio_url, tempfile.gettempdir(), sample_rate
     )
     st.success(result_distorted)
 
