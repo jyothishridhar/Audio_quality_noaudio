@@ -3,10 +3,14 @@ import pandas as pd
 from pydub import AudioSegment
 import numpy as np
 import matplotlib.pyplot as plt
+import streamlit as st
+import requests
+import io
+import tempfile
 
-# Function to extract samples from audio file
-def extract_samples(audio_path):
-    audio = AudioSegment.from_file(audio_path)
+# Function to extract samples from the audio file
+def extract_samples(audio_content):
+    audio = AudioSegment.from_file(io.BytesIO(audio_content), format="wav", codec="ffmpeg")
     return np.array(audio.get_array_of_samples())
 
 # Function to calculate audio features
@@ -17,127 +21,107 @@ def calculate_audio_features(samples):
     }
     return features
 
-def evaluate_audio_quality_for_frame(samples, frame_index, frame_size, output_folder, sample_rate):
+def evaluate_audio_quality_for_video(video_url, output_folder, sample_rate, frame_size=4410):
     try:
-        # Initialize variables to store glitch stats and features
-        glitch_stats = {'Mean': None, 'Std': None}
-        audio_features = calculate_audio_features(samples)
+        # Download the video
+        video_content = requests.get(video_url).content
 
-        # Check for silence (dropouts)
-        if audio_features['Max Amplitude'] < 0:
-            dropout_position = np.argmax(samples < 0)
-            plot_audio_with_issue(samples, dropout_position, "Audio_dropout", output_folder, frame_index, sample_rate)
-            return f"Audio dropout detected at {dropout_position} samples", glitch_stats, audio_features
+        # Extract audio samples
+        audio_samples = extract_samples(video_content)
 
-        # Check for clipping/distortion
-        if audio_features['Max Amplitude'] >= 32000:
-            clipping_position = np.argmax(np.abs(samples) >= 32000)
-            plot_audio_with_issue(samples, clipping_position, "Audio_distortion", output_folder, frame_index, sample_rate)
-            return f"Audio distortion detected at {clipping_position} samples", glitch_stats, audio_features
+        # List to store results for each frame
+        results_for_frames = []
 
-        # Check for consistent amplitude (glitches)
-        amplitude_std = np.std(samples)
-        if amplitude_std > 1000:
-            glitch_position = np.argmax(samples)
-            plot_audio_with_issue(samples, glitch_position, "Audio_glitch", output_folder, frame_index, sample_rate)
+        # Output folder
+        video_output_folder = os.path.join(output_folder, "audio_plots")
 
-            # Calculate statistics for glitch values
-            glitch_samples = samples[glitch_position:glitch_position + 1000]  # Adjust window size as needed
-            glitch_stats['Mean'] = np.mean(glitch_samples)
-            glitch_stats['Std'] = np.std(glitch_samples)
+        # Evaluate audio quality for each frame
+        for i in range(0, len(audio_samples), frame_size):
+            frame_samples = audio_samples[i:i + frame_size]
 
-            return f"Audio glitch detected at {glitch_position} samples", glitch_stats, audio_features
+            result, glitch_status, glitch_stats, audio_features, plot_filename = evaluate_audio_quality_for_frame(
+                frame_samples, i, frame_size, video_output_folder, sample_rate
+            )
 
-        # If audio quality is good, plot the audio waveform
-        plot_audio(samples, "Good_Audio_Quality", output_folder, frame_index, sample_rate)
-        return "Audio quality is good", glitch_stats, audio_features
+            results_for_frames.append({
+                'Start Time (seconds)': i / sample_rate,  # Adjust the sample rate as needed
+                'End Time (seconds)': (i + frame_size) / sample_rate,
+                'Glitch Status': glitch_status,
+                'Glitch Stats': glitch_stats,
+                'Audio Features': audio_features,
+                'Plot': plot_filename,
+            })
+
+        # Create a DataFrame for the report
+        report_df = pd.DataFrame(results_for_frames)
+
+        # Save the report to a temporary file
+        excel_file = os.path.join(output_folder, "audio_quality_report_for_frames.xlsx")
+        report_df.to_excel(excel_file, index=False)
+        print(f"Report saved to {excel_file}")
+
+        return "Audio quality analysis completed!", report_df, excel_file
 
     except Exception as e:
-        return f"Error: {str(e)}", glitch_stats, None
+        return f"Error: {str(e)}", None, None
 
-def plot_audio(samples, issue_label, output_folder, frame_index, sample_rate):
-    os.makedirs(output_folder, exist_ok=True)
+# Streamlit app code
+st.title("No Audio Analysis Demo")
 
-    time_values = np.arange(frame_index, frame_index + len(samples)) / sample_rate
+# Git LFS URLs for the videos
+original_audio_url = "https://github.com/jyothishridhar/Audio_quality_noaudio/raw/master/referance_audio.wav"
+distorted_audio_url = "https://github.com/jyothishridhar/Audio_quality_noaudio/raw/master/testing_audio.wav"
 
-    plt.figure(figsize=(16, 5))
-    plt.plot(time_values, samples, label="Audio Signal", color='b')
-    plt.xlabel("Time (seconds)")
-    plt.ylabel("Amplitude")
-    plt.legend()
-    plt.title(f"Audio_Waveform_{issue_label}_{frame_index}")
+# Download videos
+original_video_content = requests.get(original_video_url).content
+distorted_video_content = requests.get(distorted_video_url).content
 
-    # Save the plot to a file
-    plot_filename = os.path.join(output_folder, f"audio_waveform_{issue_label}_{frame_index}.png")
-    plt.savefig(plot_filename)
-    plt.close()
+# Add download links
+st.markdown(f"**Download Original Video**")
+st.markdown(f"[Click here to download the Original Video]({original_video_url})")
 
-    print(f"Plot saved to {plot_filename}")
-
-def plot_audio_with_issue(samples, issue_position, issue_label, output_folder, frame_index, sample_rate):
-    os.makedirs(output_folder, exist_ok=True)
-
-    time_values = np.arange(frame_index, frame_index + len(samples)) / sample_rate
-
-    plt.figure(figsize=(16, 5))
-    plt.plot(time_values, samples, label="Audio Signal", color='b')
-    plt.axvline(x=time_values[issue_position], color='r', linestyle='--', label=issue_label)
-    plt.xlabel("Time (seconds)")
-    plt.ylabel("Amplitude")
-    plt.legend()
-    plt.title(f"Audio_Waveform_{issue_label}_{frame_index}")
-
-    # Save the plot to a file
-    plot_filename = os.path.join(output_folder, f"audio_waveform_{issue_label}_{frame_index}.png")
-    plt.savefig(plot_filename)
-    plt.close()
-
-    print(f"Plot saved to {plot_filename}")
-
-# Example paths
-original_audio_path = r"C:\OTT_PROJECT\audio_testing\audio_voice_absence\referance_video.wav"
-distorted_audio_path = r"C:\OTT_PROJECT\audio_testing\audio_voice_absence\output_audio_unmuted.wav"
-
-# Extract samples from audio
-original_samples = extract_samples(original_audio_path)
-distorted_samples = extract_samples(distorted_audio_path)
-
-# List to store results for each frame
-results_for_frames = []
-
-# Output folders
-original_output_folder = r"C:\OTT_PROJECT\audio_testing\audio_voice_absence\original_plots"
-distorted_output_folder = r"C:\OTT_PROJECT\audio_testing\audio_voice_absence\distorted_plots"
+st.markdown(f"**Download Distorted Video**")
+st.markdown(f"[Click here to download the Distorted Video]({distorted_video_url})")
 
 # Sample rate
 sample_rate = 44100
 
-# Evaluate audio quality for each frame
-frame_size = int(sample_rate * 0.1)  # 100 milliseconds (adjust sample rate as needed)
-for i in range(0, min(len(original_samples), len(distorted_samples)), frame_size):
-    original_frame_samples = original_samples[i:i + frame_size]
-    distorted_frame_samples = distorted_samples[i:i + frame_size]
-
-    result_original, glitch_stats_original, audio_features_original = evaluate_audio_quality_for_frame(
-        original_frame_samples, i, frame_size, original_output_folder, sample_rate
+# Add button to run audio quality analysis for the original video
+if st.button("Run Audio Quality Analysis (Original)"):
+    st.text("Running audio quality analysis for the original video...")
+    result_original, report_df_original, excel_file_original = evaluate_audio_quality_for_video(
+        original_video_url, tempfile.gettempdir(), sample_rate
     )
+    st.success(result_original)
 
-    result_distorted, glitch_stats_distorted, audio_features_distorted = evaluate_audio_quality_for_frame(
-        distorted_frame_samples, i, frame_size, distorted_output_folder, sample_rate
+    # Display the DataFrame
+    st.dataframe(report_df_original)
+
+    # Display glitch plots
+    st.markdown("### Glitch Plots (Original)")
+    for i, plot_filename_original in enumerate(report_df_original['Plot']):
+        st.image(plot_filename_original, f"Glitch Plot (Original) {i}")
+
+    # Add download link for the report
+    st.markdown(f"**Download Audio Quality Report (Original)**")
+    st.markdown(f"[Click here to download the Audio Quality Report Excel]({excel_file_original})")
+
+# Add button to run audio quality analysis for the distorted video
+if st.button("Run Audio Quality Analysis (Distorted)"):
+    st.text("Running audio quality analysis for the distorted video...")
+    result_distorted, report_df_distorted, excel_file_distorted = evaluate_audio_quality_for_video(
+        distorted_video_url, tempfile.gettempdir(), sample_rate
     )
+    st.success(result_distorted)
 
-    results_for_frames.append({
-        'Start Time (seconds)': i / sample_rate,  # Adjust the sample rate as needed
-        'End Time (seconds)': (i + frame_size) / sample_rate,
-#         'Glitch Stats (Original)': glitch_stats_original,
-        'Audio Features (Original_Audio)': audio_features_original,
-#         'Glitch Stats (Distorted)': glitch_stats_distorted,
-         'Audio Features (Voice_absent_Audio)': audio_features_distorted,
-    })
+    # Display the DataFrame
+    st.dataframe(report_df_distorted)
 
-# Create a DataFrame for the report
-report_df = pd.DataFrame(results_for_frames)
+    # Display glitch plots
+    st.markdown("### Glitch Plots (Distorted)")
+    for i, plot_filename_distorted in enumerate(report_df_distorted['Plot']):
+        st.image(plot_filename_distorted, f"Glitch Plot (Distorted) {i}")
 
-excel_file = r"C:\OTT_PROJECT\audio_testing\audio_voice_absence\audio_absent_report_for_frames.xlsx"
-report_df.to_excel(excel_file, index=False)
-print(f"Report saved to {excel_file}")
+    # Add download link for the report
+    st.markdown(f"**Download Audio Quality Report (Distorted)**")
+    st.markdown(f"[Click here to download the Audio Quality Report Excel]({excel_file_distorted})")
