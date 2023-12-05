@@ -31,13 +31,13 @@ def evaluate_audio_quality_for_frame(samples, frame_index, frame_size, output_fo
         if audio_features['Max Amplitude'] < 0:
             dropout_position = np.argmax(samples < 0)
             plot_filename = plot_audio_with_issue(samples, dropout_position, "Audio_dropout", output_folder, frame_index, sample_rate)
-            return f"Audio dropout detected at {dropout_position} samples", "Glitch", glitch_stats, audio_features, plot_filename
+            return f"Audio dropout detected at {dropout_position} samples", "No Glitch", glitch_stats, audio_features, plot_filename
 
         # Check for clipping/distortion
         if audio_features['Max Amplitude'] >= 32767:
             clipping_position = np.argmax(np.abs(samples) >= 32000)
             plot_filename = plot_audio_with_issue(samples, clipping_position, "Audio_distortion", output_folder, frame_index, sample_rate)
-            return f"Audio distortion detected at {clipping_position} samples", "Glitch", glitch_stats, audio_features, plot_filename
+            return f"Audio distortion detected at {clipping_position} samples", "No Glitch", glitch_stats, audio_features, plot_filename
 
         # Check for consistent amplitude (glitches)
         amplitude_std = np.std(samples)
@@ -171,14 +171,14 @@ if st.button("Run Audio Quality Analysis"):
     # Display the DataFrame
     st.dataframe(report_df)
 
-    # Display glitch plots
-    st.markdown("### Glitch Plots (Original)")
-    for i, plot_filename_original in enumerate(report_df['Plot (Original)']):
-        st.image(plot_filename_original, f"Glitch Plot (Original) {i}")
+    # Display dropout plots
+    st.markdown("### Dropout Plots (Original)")
+    for i, plot_filename_original in enumerate(report_df[report_df['Glitch Status (Original)'] == 'No Glitch']['Plot (Original)']):
+        st.image(plot_filename_original, f"Dropout Plot (Original) {i}")
 
-    st.markdown("### Glitch Plots (Distorted)")
-    for i, plot_filename_distorted in enumerate(report_df['Plot (Distorted)']):
-        st.image(plot_filename_distorted, f"Glitch Plot (Distorted) {i}")
+    st.markdown("### Dropout Plots (Distorted)")
+    for i, plot_filename_distorted in enumerate(report_df[report_df['Glitch Status (Distorted)'] == 'No Glitch']['Plot (Distorted)']):
+        st.image(plot_filename_distorted, f"Dropout Plot (Distorted) {i}")
 
     # Add download link for the report
     st.markdown(f"**Download Audio Quality Report**")
