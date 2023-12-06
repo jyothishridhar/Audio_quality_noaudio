@@ -31,13 +31,13 @@ def evaluate_audio_quality_for_frame(samples, frame_index, frame_size, output_fo
         if audio_features['Max Amplitude'] < 0:
             dropout_position = np.argmax(samples < 0)
             plot_filename = plot_audio_with_issue(samples, dropout_position, "Audio_dropout", output_folder, frame_index, sample_rate)
-            return f"Audio dropout detected at {dropout_position} samples", "Dropout", dropout_stats, audio_features, plot_filename
+            return f"Audio dropout detected at {dropout_position} samples", "Voice Absent", dropout_stats, audio_features, plot_filename
 
         # Check for clipping/distortion
         if audio_features['Max Amplitude'] >= 32767:
             clipping_position = np.argmax(np.abs(samples) >= 32000)
             plot_filename = plot_audio_with_issue(samples, clipping_position, "Audio_distortion", output_folder, frame_index, sample_rate)
-            return f"Audio distortion detected at {clipping_position} samples", "Dropout", dropout_stats, audio_features, plot_filename
+            return f"Audio distortion detected at {clipping_position} samples", "Voice Absent", dropout_stats, audio_features, plot_filename
 
         # Check for consistent amplitude (glitches)
         amplitude_std = np.std(samples)
@@ -50,11 +50,11 @@ def evaluate_audio_quality_for_frame(samples, frame_index, frame_size, output_fo
             dropout_stats['Mean'] = np.mean(dropout_samples)
             dropout_stats['Std'] = np.std(dropout_samples)
 
-            return f"Audio dropout detected at {glitch_position} samples", "Dropout", dropout_stats, audio_features, plot_filename
+            return f"Audio dropout detected at {glitch_position} samples", "Voice Absent", dropout_stats, audio_features, plot_filename
 
         # If audio quality is good, plot the audio waveform
         plot_filename = plot_audio(samples, "Good_Audio_Quality", output_folder, frame_index, sample_rate)
-        return "Audio quality is good", "No Dropout", dropout_stats, audio_features, plot_filename
+        return "Audio quality is good", "Voice Presence", dropout_stats, audio_features, plot_filename
 
     except Exception as e:
         return f"Error: {str(e)}", "Error", dropout_stats, None, None
@@ -173,11 +173,11 @@ if st.button("Run Audio Quality Analysis"):
 
     # Display dropout plots
     st.markdown("### Dropout Plots (Original)")
-    for i, plot_filename_original in enumerate(report_df[report_df['Dropout Status (Original)'] == 'Dropout']['Plot (Original)']):
+    for i, plot_filename_original in enumerate(report_df[report_df['Dropout Status (Original)'] == 'Voice Absent']['Plot (Original)']):
         st.image(plot_filename_original, f"Dropout Plot (Original) {i}")
 
     st.markdown("### Dropout Plots (Distorted)")
-    for i, plot_filename_distorted in enumerate(report_df[report_df['Dropout Status (Distorted)'] == 'Dropout']['Plot (Distorted)']):
+    for i, plot_filename_distorted in enumerate(report_df[report_df['Dropout Status (Distorted)'] == 'Voice Absent']['Plot (Distorted)']):
         st.image(plot_filename_distorted, f"Dropout Plot (Distorted) {i}")
 
     # Add download link for the report
