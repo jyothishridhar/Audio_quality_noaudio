@@ -101,7 +101,7 @@ def plot_audio_with_issue(samples, issue_position, issue_label, output_folder, f
     return plot_filename
 
 # Streamlit app code
-st.title("Audio Quality Analysis Demo")
+st.title("Audio Quality Dropout Analysis Demo")
 
 # Git LFS URLs for the audio files
 original_audio_url = "https://github.com/jyothishridhar/Audio_quality_noaudio/raw/master/referance_audio.wav"
