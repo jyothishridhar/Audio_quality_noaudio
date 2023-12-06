@@ -37,7 +37,7 @@ def evaluate_audio_quality_for_frame(samples, frame_index, frame_size, output_fo
         if audio_features['Max Amplitude'] >= 32767:
             clipping_position = np.argmax(np.abs(samples) >= 32000)
             plot_filename = plot_audio_with_issue(samples, clipping_position, "Audio_distortion", output_folder, frame_index, sample_rate)
-            return f"Audio distortion detected at {clipping_position} samples", "No Dropout", dropout_stats, audio_features, plot_filename
+            return f"Audio distortion detected at {clipping_position} samples", "Dropout", dropout_stats, audio_features, plot_filename
 
         # Check for consistent amplitude (glitches)
         amplitude_std = np.std(samples)
