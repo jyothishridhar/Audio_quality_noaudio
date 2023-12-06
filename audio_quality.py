@@ -31,7 +31,7 @@ def evaluate_audio_quality_for_frame(samples, frame_index, frame_size, output_fo
         if audio_features['Max Amplitude'] < 0:
             dropout_position = np.argmax(samples < 0)
             plot_filename = plot_audio_with_issue(samples, dropout_position, "Audio_dropout", output_folder, frame_index, sample_rate)
-            return f"Audio dropout detected at {dropout_position} samples", "No Dropout", dropout_stats, audio_features, plot_filename
+            return f"Audio dropout detected at {dropout_position} samples", "Dropout", dropout_stats, audio_features, plot_filename
 
         # Check for clipping/distortion
         if audio_features['Max Amplitude'] >= 32767:
@@ -173,11 +173,11 @@ if st.button("Run Audio Quality Analysis"):
 
     # Display dropout plots
     st.markdown("### Dropout Plots (Original)")
-    for i, plot_filename_original in enumerate(report_df[report_df['Dropout Status (Original)'] == 'No Dropout']['Plot (Original)']):
+    for i, plot_filename_original in enumerate(report_df[report_df['Dropout Status (Original)'] == 'Dropout']['Plot (Original)']):
         st.image(plot_filename_original, f"Dropout Plot (Original) {i}")
 
     st.markdown("### Dropout Plots (Distorted)")
-    for i, plot_filename_distorted in enumerate(report_df[report_df['Dropout Status (Distorted)'] == 'No Dropout']['Plot (Distorted)']):
+    for i, plot_filename_distorted in enumerate(report_df[report_df['Dropout Status (Distorted)'] == 'Dropout']['Plot (Distorted)']):
         st.image(plot_filename_distorted, f"Dropout Plot (Distorted) {i}")
 
     # Add download link for the report
