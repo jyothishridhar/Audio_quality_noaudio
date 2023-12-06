@@ -171,14 +171,23 @@ if st.button("Run Audio Quality Analysis"):
     # Display the DataFrame
     st.dataframe(report_df)
 
-    # Display dropout plots
-    st.markdown("### Dropout Plots (Original)")
+    # Display dropout plots for "Voice Presence"
+    st.markdown("### Voice Presence Plots (Original)")
     for i, plot_filename_original in enumerate(report_df[report_df['Dropout Status (Original)'] == 'Voice Presence']['Plot (Original)']):
-        st.image(plot_filename_original, f"Dropout Plot (Original) {i}")
+        st.image(plot_filename_original, f"Dropout Plot (Original) {i} - Voice Presence")
 
-    st.markdown("### Dropout Plots (Distorted)")
+    st.markdown("### Voice Presence Plots (Distorted)")
     for i, plot_filename_distorted in enumerate(report_df[report_df['Dropout Status (Distorted)'] == 'Voice Presence']['Plot (Distorted)']):
-        st.image(plot_filename_distorted, f"Dropout Plot (Distorted) {i}")
+        st.image(plot_filename_distorted, f"Dropout Plot (Distorted) {i} - Voice Presence")
+
+    # Display dropout plots for "Voice Absent"
+    st.markdown("### Voice Absent Plots (Original)")
+    for i, plot_filename_original in enumerate(report_df[report_df['Dropout Status (Original)'] == 'Voice Absent']['Plot (Original)']):
+        st.image(plot_filename_original, f"Dropout Plot (Original) {i} - Voice Absent")
+
+    st.markdown("### Voice Absent Plots (Distorted)")
+    for i, plot_filename_distorted in enumerate(report_df[report_df['Dropout Status (Distorted)'] == 'Voice Absent']['Plot (Distorted)']):
+        st.image(plot_filename_distorted, f"Dropout Plot (Distorted) {i} - Voice Absent")
 
     # Add download link for the report
     st.markdown(f"**Download Audio Quality Report**")
